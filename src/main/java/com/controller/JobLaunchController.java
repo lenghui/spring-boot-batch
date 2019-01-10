@@ -57,9 +57,6 @@ public class JobLaunchController {
 		} catch (JobParametersInvalidException e) {
 			e.printStackTrace();
 			return e.toString();
-		} catch (FlatFileParseException e) {
-			e.printStackTrace();
-			return "批处理时读取数据出现异常！"+e.toString();
 		}
 		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters
 				+",status:"+(jobExecution == null?null:jobExecution.getStatus());
@@ -90,15 +87,6 @@ public class JobLaunchController {
 		} catch (JobParametersInvalidException e) {
 			e.printStackTrace();
 			return e.toString();
-		} catch (FlatFileParseException e) {
-			e.printStackTrace();
-			return "批处理时读取数据出现异常！"+e.toString();
-		} catch (ParseException e) {
-			e.printStackTrace();
-			return "批处理时读取数据出现异常！"+e.toString();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "批处理时读取数据出现异常！"+e.toString();
 		}
 		
 		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters
