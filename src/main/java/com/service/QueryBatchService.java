@@ -17,10 +17,16 @@ public class QueryBatchService {
 	final String GET_STEP_EXCUTION_STATUS = "SELECT STATUS FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID = ("+GET_JOB_EXECUTION_ID+") ORDER BY START_TIME DESC LIMIT 1";
 	// 获取batch_job_execution_params表中对应JobExecution_ID的入参
 	final String GET_PARAMTERSSTRING = "SELECT LONG_VAL FROM BATCH_JOB_EXECUTION_PARAMS WHERE JOB_EXECUTION_ID = ("+GET_JOB_EXECUTION_ID+") ORDER BY LONG_VAL DESC LIMIT 1";
-	
+	// 判断表中是否有数据（没有则表示是第一次运行）
+	final String CHECK_INSTANCE_ISNULL = "SELECT COUNT(1) FROM BATCH_JOB_INSTANCE";
 	
 	// 获取上一次跑批状态
 	public boolean checkLastBatchStatus() {
+		// 第一次运行时，数据库中是没有数据的，所以要先排除第一次跑批的场景
+		if (this.checkFirstRun()) {
+			System.out.println("first run!");
+			return true;
+		}
 		boolean flag = false;
 		String status = jdbcTemplage.queryForObject(GET_STEP_EXCUTION_STATUS, String.class);
 		if ("COMPLETED".equals(status)) {
@@ -34,5 +40,9 @@ public class QueryBatchService {
 		Long paramters = jdbcTemplage.queryForObject(GET_PARAMTERSSTRING, Long.class);
 		return paramters;
 	}
-	
+	// 查看是否时第一次跑批
+	public boolean checkFirstRun() {
+		Integer count = jdbcTemplage.queryForObject(CHECK_INSTANCE_ISNULL, Integer.class);
+		return count == 0 ? true:false;
+	}
 }

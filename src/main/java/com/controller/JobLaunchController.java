@@ -1,6 +1,7 @@
 package com.controller;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -40,8 +41,10 @@ public class JobLaunchController {
 		JobParameters jobParameters = new JobParametersBuilder().addLong("time", System.currentTimeMillis())
 				.toJobParameters();
 		Job job = (Job) context.getBean("userJob");
+		JobExecution jobExecution = null;
 		try {
-			jobLauncher.run(job, jobParameters);
+			// 在启动批处理时，当数据格式不对，异常已经在jar包中捕捉并不会抛出，所以我们得根据结果来判断执行状态
+			jobExecution = jobLauncher.run(job, jobParameters);
 		} catch (JobExecutionAlreadyRunningException e) {
 			e.printStackTrace();
 			return e.toString();
@@ -58,7 +61,8 @@ public class JobLaunchController {
 			e.printStackTrace();
 			return "批处理时读取数据出现异常！"+e.toString();
 		}
-		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters;
+		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters
+				+",status:"+(jobExecution == null?null:jobExecution.getStatus());
 	}
 	
 	// 续批
@@ -71,9 +75,9 @@ public class JobLaunchController {
 		JobParameters jobParameters = new JobParametersBuilder().addLong("time", queryBatchService.getParamters())
 				.toJobParameters();
 		Job job = (Job) context.getBean("userJob");
-		
+		JobExecution jobExecution = null;
 		try {
-			jobLauncher.run(job, jobParameters);
+			jobExecution = jobLauncher.run(job, jobParameters);
 		} catch (JobExecutionAlreadyRunningException e) {
 			e.printStackTrace();
 			return e.toString();
@@ -97,7 +101,8 @@ public class JobLaunchController {
 			return "批处理时读取数据出现异常！"+e.toString();
 		}
 		
-		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters;
+		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters
+				+", status="+(jobExecution==null?null:jobExecution.getStatus());
 	}
 	
 
