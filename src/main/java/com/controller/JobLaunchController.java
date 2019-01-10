@@ -8,9 +8,14 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.batch.item.ParseException;
+import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.service.QueryBatchService;
 
 @RestController
 public class JobLaunchController {
@@ -18,16 +23,83 @@ public class JobLaunchController {
 	@Autowired
 	private JobLauncher jobLauncher;
 	
-	@Autowired 
-	private Job job;
+	@Autowired
+	private ApplicationContext context;
 	
+	@Autowired
+	private QueryBatchService queryBatchService;
+	
+	//调用跑批
 	@RequestMapping("/invokejob")
-	public String handle() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
+	public String handle() {
+		// 跑批前校验上次跑批是否成功，如果失败则拒绝跑批
+		if (!queryBatchService.checkLastBatchStatus()) {
+			return "上次跑批失败，请先完成续批！";
+		}
+		
 		JobParameters jobParameters = new JobParametersBuilder().addLong("time", System.currentTimeMillis())
 				.toJobParameters();
-		jobLauncher.run(job, jobParameters);
-		
-		return "Batch job has been invoked";
+		Job job = (Job) context.getBean("userJob");
+		try {
+			jobLauncher.run(job, jobParameters);
+		} catch (JobExecutionAlreadyRunningException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (JobRestartException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (JobInstanceAlreadyCompleteException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (JobParametersInvalidException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (FlatFileParseException e) {
+			e.printStackTrace();
+			return "批处理时读取数据出现异常！"+e.toString();
+		}
+		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters;
 	}
+	
+	// 续批
+	@RequestMapping("/reinvokejob")
+	public String exceptionHandle() {
+		// 获取上次跑批时的入参
+		if (queryBatchService.getParamters() == null) {
+			return "获取入参失败！";
+		}
+		JobParameters jobParameters = new JobParametersBuilder().addLong("time", queryBatchService.getParamters())
+				.toJobParameters();
+		Job job = (Job) context.getBean("userJob");
+		
+		try {
+			jobLauncher.run(job, jobParameters);
+		} catch (JobExecutionAlreadyRunningException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (JobRestartException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (JobInstanceAlreadyCompleteException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (JobParametersInvalidException e) {
+			e.printStackTrace();
+			return e.toString();
+		} catch (FlatFileParseException e) {
+			e.printStackTrace();
+			return "批处理时读取数据出现异常！"+e.toString();
+		} catch (ParseException e) {
+			e.printStackTrace();
+			return "批处理时读取数据出现异常！"+e.toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "批处理时读取数据出现异常！"+e.toString();
+		}
+		
+		return "Batch job has been invoked"+"。 jonName: "+job.getName()+", jobParameters:"+jobParameters;
+	}
+	
+
 	
 }

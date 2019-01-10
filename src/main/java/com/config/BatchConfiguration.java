@@ -38,7 +38,7 @@ public class BatchConfiguration {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Bean
-	public FlatFileItemReader<People> reader(){
+	public FlatFileItemReader<People> reader() throws Exception{
 		return new FlatFileItemReaderBuilder()
 				.name("peopleItemReader")
 				.resource(new ClassPathResource("sample-data.csv"))
@@ -64,10 +64,19 @@ public class BatchConfiguration {
 				.build();
 	}
 	
-	
 	@Bean
+	public Step step1(JdbcBatchItemWriter<People> writer) throws Exception {
+		return stepBuilderFactory.get("step1")
+				.<People, People> chunk(10)
+				.reader(reader())
+				.processor(processor())
+				.writer(writer)
+				.build();
+	}
+	
+	@Bean(value="userJob")
 	public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
-		return jobBuilderFactory.get("importUserJob")
+		return jobBuilderFactory.get("myJob")
 				.incrementer(new RunIdIncrementer())
 				.listener(listener)
 				.flow(step1)
@@ -75,14 +84,5 @@ public class BatchConfiguration {
 				.build();
 	}
 	
-    @Bean
-    public Step step1(JdbcBatchItemWriter<People> writer) {
-        return stepBuilderFactory.get("step1")
-            .<People, People> chunk(10)
-            .reader(reader())
-            .processor(processor())
-            .writer(writer)
-            .build();
-    }
 	
 }
