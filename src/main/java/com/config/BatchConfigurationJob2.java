@@ -1,11 +1,16 @@
  package com.config;
 
+import javax.sql.DataSource;
+
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -17,11 +22,10 @@ import org.springframework.core.io.ClassPathResource;
 import com.listern.JobCompletionNotificationListener;
 import com.model.People;
 import com.process.PeopleProcess;
-import com.write.WriteForJob1;
 
 @Configuration
 @EnableBatchProcessing
-public class BatchConfiguration {
+public class BatchConfigurationJob2 {
 
 	@Autowired
 	public JobBuilderFactory jobBuilderFactory;
@@ -51,36 +55,31 @@ public class BatchConfiguration {
 		return new PeopleProcess();
 	}
 	
-//	@Bean
-//	public JdbcBatchItemWriter<People> writer(DataSource dataSource){
-//		return new JdbcBatchItemWriterBuilder<People>()
-//				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-//				.sql("INSERT INTO PEOPLE (FIRST_NAME, LAST_NAME) VALUES (:firstName, :lastName)")
-//				.dataSource(dataSource)
-//				.build();
-//	}
-	
 	@Bean
-	public WriteForJob1 writerForJob1() {
-		return new WriteForJob1();
-	}
-	
-	@Bean
-	public Step step01() throws Exception {
-		return stepBuilderFactory.get("step01")
-				.<People, People> chunk(10)
-				.reader(reader())
-				.processor(processor())
-				.writer(writerForJob1())
+	public JdbcBatchItemWriter<People> writer(DataSource dataSource){
+		return new JdbcBatchItemWriterBuilder<People>()
+				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+				.sql("INSERT INTO PEOPLE (FIRST_NAME, LAST_NAME) VALUES (:firstName, :lastName)")
+				.dataSource(dataSource)
 				.build();
 	}
 	
-	@Bean(value="userJob")
-	public Job importUserJob(JobCompletionNotificationListener listener, Step step01) {
-		return jobBuilderFactory.get("myJob")
+	@Bean
+	public Step step1(JdbcBatchItemWriter<People> writer) throws Exception {
+		return stepBuilderFactory.get("step1")
+				.<People, People> chunk(10)
+				.reader(reader())
+				.processor(processor())
+				.writer(writer)
+				.build();
+	}
+	
+	@Bean(value="userJob2")
+	public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
+		return jobBuilderFactory.get("myJob2")
 				.incrementer(new RunIdIncrementer())
 				.listener(listener)
-				.flow(step01)
+				.flow(step1)
 				.end()
 				.build();
 	}

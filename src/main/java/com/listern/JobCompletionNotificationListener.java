@@ -24,15 +24,7 @@ public class JobCompletionNotificationListener extends JobExecutionListenerSuppo
 	@Override
 	public void afterJob(JobExecution jobExecution) {
 		if(jobExecution.getStatus() == BatchStatus.COMPLETED) {
-			System.out.println("开始查询");
-			jdbcTemplate.query("select first_name, last_name from people", new RowCallbackHandler() {
-			
-			@Override
-			public void processRow(ResultSet rs) throws SQLException {
-				System.out.println(rs.getString("first_name"));
-			}
-		});
-
+			System.out.println("-----------跑批结束！-------------");
 		}
 		
 	}
